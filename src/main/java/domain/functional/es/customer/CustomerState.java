@@ -1,6 +1,9 @@
 package domain.functional.es.customer;
 
-import domain.shared.event.*;
+import domain.shared.event.CustomerEmailAddressChanged;
+import domain.shared.event.CustomerEmailAddressConfirmed;
+import domain.shared.event.CustomerRegistered;
+import domain.shared.event.Event;
 import domain.shared.value.EmailAddress;
 import domain.shared.value.Hash;
 import domain.shared.value.PersonName;
@@ -13,7 +16,8 @@ public class CustomerState {
     PersonName name;
     boolean isEmailAddressConfirmed;
 
-    private CustomerState() {}
+    private CustomerState() {
+    }
 
     public static CustomerState reconstitute(List<Event> events) {
         var customer = new CustomerState();
@@ -25,19 +29,24 @@ public class CustomerState {
 
     void apply(List<Event> events) {
         for (Event event : events) {
-            if (event.getClass() == CustomerRegistered.class) {
-                // TODO
+            if (event instanceof CustomerRegistered) {
+                CustomerRegistered customerRegistered = (CustomerRegistered) event;
+                this.emailAddress = customerRegistered.emailAddress;
+                this.confirmationHash = customerRegistered.confirmationHash;
+                this.name = customerRegistered.name;
+                this.isEmailAddressConfirmed = false;
                 continue;
             }
-
-            if (event.getClass() == CustomerEmailAddressConfirmed.class) {
-                // TODO
+            if (event instanceof CustomerEmailAddressConfirmed) {
+                this.isEmailAddressConfirmed = true;
                 continue;
             }
-
-            if (event.getClass() == CustomerEmailAddressChanged.class) {
-                // TODO
-                isEmailAddressConfirmed = false;
+            if (event instanceof CustomerEmailAddressChanged) {
+                CustomerEmailAddressChanged emailAddressChanged = (CustomerEmailAddressChanged) event;
+                this.emailAddress = emailAddressChanged.emailAddress;
+                this.confirmationHash = emailAddressChanged.confirmationHash;
+                this.isEmailAddressConfirmed = false;
+                continue;
             }
         }
     }

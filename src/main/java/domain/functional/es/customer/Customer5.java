@@ -11,7 +11,12 @@ import java.util.List;
 
 public class Customer5 {
     public static CustomerRegistered register(RegisterCustomer command) {
-        return null; // TODO
+        return CustomerRegistered.build(
+                command.customerID,
+                command.emailAddress,
+                command.confirmationHash,
+                command.name
+        );
     }
 
     public static List<Event> confirmEmailAddress(List<Event> eventStream, ConfirmCustomerEmailAddress command) {
@@ -19,31 +24,42 @@ public class Customer5 {
         Hash confirmationHash = null;
         for (Event event : eventStream) {
             if (event instanceof CustomerRegistered) {
-                // TODO
+                confirmationHash = ((CustomerRegistered) event).confirmationHash;
             } else if (event instanceof CustomerEmailAddressConfirmed) {
-                // TODO
+                isEmailAddressConfirmed = true;
             } else if (event instanceof CustomerEmailAddressChanged) {
-                // TODO
+                isEmailAddressConfirmed = false;
+                confirmationHash = ((CustomerEmailAddressChanged) event).confirmationHash;
             }
         }
 
-        // TODO
+        if (confirmationHash.equals(command.confirmationHash)) {
+            return isEmailAddressConfirmed
+                    ? List.of()
+                    : List.of(CustomerEmailAddressConfirmed.build(command.customerID));
+        }
 
-        return List.of(); // TODO
+        return List.of(CustomerEmailAddressConfirmationFailed.build(command.customerID));
     }
 
     public static List<Event> changeEmailAddress(List<Event> eventStream, ChangeCustomerEmailAddress command) {
         EmailAddress emailAddress = null;
         for (Event event : eventStream) {
             if (event instanceof CustomerRegistered) {
-                // TODO
+                emailAddress = ((CustomerRegistered) event).emailAddress;
             } else if (event instanceof CustomerEmailAddressChanged) {
-                // TODO
+                emailAddress = ((CustomerEmailAddressChanged) event).emailAddress;
             }
         }
 
-        // TODO
+        if(command.emailAddress.equals(emailAddress)){
+            return List.of();
+        }
 
-        return List.of(); // TODO
+        return List.of(CustomerEmailAddressChanged.build(
+                command.customerID,
+                command.emailAddress,
+                command.confirmationHash
+        ));
     }
 }

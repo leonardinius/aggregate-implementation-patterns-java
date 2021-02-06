@@ -20,7 +20,7 @@ public final class Customer3 {
     }
 
     public static CustomerRegistered register(RegisterCustomer command) {
-        return null; // TODO
+        return CustomerRegistered.build(command.customerID, command.emailAddress, command.confirmationHash, command.name);
     }
 
     public static Customer3 reconstitute(List<Event> events) {
@@ -32,15 +32,29 @@ public final class Customer3 {
     }
 
     public List<Event> confirmEmailAddress(ConfirmCustomerEmailAddress command) {
-        // TODO
+        Event event;
+        if (command.confirmationHash.equals(confirmationHash)) {
+            if (this.isEmailAddressConfirmed) {
+                return List.of();
+            }
+            event = CustomerEmailAddressConfirmed.build(command.customerID);
+        } else {
+            event = CustomerEmailAddressConfirmationFailed.build(command.customerID);
+        }
 
-        return List.of(); // TODO
+        return List.of(event);
     }
 
     public List<Event> changeEmailAddress(ChangeCustomerEmailAddress command) {
-        // TODO
+        if(command.emailAddress.equals(emailAddress)){
+            return List.of();
+        }
 
-        return List.of(); // TODO
+        return List.of(CustomerEmailAddressChanged.build(
+                command.customerID,
+                command.emailAddress,
+                command.confirmationHash)
+        );
     }
 
     void apply(List<Event> events) {
@@ -50,12 +64,19 @@ public final class Customer3 {
     }
 
     void apply(Event event) {
-        if (event.getClass() == CustomerRegistered.class) {
-            // TODO
-        } else if (event.getClass() == CustomerEmailAddressConfirmed.class) {
-            // TODO
-        } else if (event.getClass() == CustomerEmailAddressChanged.class) {
-            // TODO
+        if (event instanceof CustomerRegistered) {
+            CustomerRegistered customerRegistered = (CustomerRegistered) event;
+            this.emailAddress = customerRegistered.emailAddress;
+            this.confirmationHash = customerRegistered.confirmationHash;
+            this.name = customerRegistered.name;
+            this.isEmailAddressConfirmed = false;
+        } else if (event instanceof CustomerEmailAddressConfirmed) {
+            this.isEmailAddressConfirmed = true;
+        } else if (event instanceof CustomerEmailAddressChanged) {
+            CustomerEmailAddressChanged emailAddressChanged = (CustomerEmailAddressChanged) event;
+            this.emailAddress = emailAddressChanged.emailAddress;
+            this.confirmationHash = emailAddressChanged.confirmationHash;
+            this.isEmailAddressConfirmed = false;
         }
     }
 }

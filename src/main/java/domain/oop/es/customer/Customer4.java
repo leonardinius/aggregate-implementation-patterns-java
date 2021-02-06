@@ -26,9 +26,18 @@ public final class Customer4 {
     public static Customer4 register(RegisterCustomer command) {
         Customer4 customer = new Customer4();
 
-        // TODO
+        customer.record(CustomerRegistered.build(
+                command.customerID,
+                command.emailAddress,
+                command.confirmationHash,
+                command.name
+        ));
 
         return customer;
+    }
+
+    private void record(Event... events) {
+        recordedEvents.addAll(List.of(events));
     }
 
     public static Customer4 reconstitute(List<Event> events) {
@@ -40,11 +49,30 @@ public final class Customer4 {
     }
 
     public void confirmEmailAddress(ConfirmCustomerEmailAddress command) {
-        // TODO
+        if (command.confirmationHash.equals(confirmationHash)) {
+            if (isEmailAddressConfirmed) {
+                return;
+            }
+
+            record(CustomerEmailAddressConfirmed.build(
+                    command.customerID
+            ));
+        } else {
+            record(CustomerEmailAddressConfirmationFailed.build(
+                    command.customerID
+            ));
+        }
     }
 
     public void changeEmailAddress(ChangeCustomerEmailAddress command) {
-        // TODO
+        if(command.emailAddress.equals(emailAddress)){
+            return;
+        }
+        record(CustomerEmailAddressChanged.build(
+                command.customerID,
+                command.emailAddress,
+                command.confirmationHash
+        ));
     }
 
     public List<Event> getRecordedEvents() {
@@ -62,12 +90,19 @@ public final class Customer4 {
     }
 
     void apply(Event event) {
-        if (event.getClass() == CustomerRegistered.class) {
-            // TODO
-        } else if (event.getClass() == CustomerEmailAddressConfirmed.class) {
-            // TODO
-        } else if (event.getClass() == CustomerEmailAddressChanged.class) {
-            // TODO
+        if (event instanceof CustomerRegistered) {
+            CustomerRegistered customerRegistered = (CustomerRegistered) event;
+            this.emailAddress = customerRegistered.emailAddress;
+            this.confirmationHash = customerRegistered.confirmationHash;
+            this.name = customerRegistered.name;
+            this.isEmailAddressConfirmed = false;
+        } else if (event instanceof CustomerEmailAddressConfirmed) {
+            this.isEmailAddressConfirmed = true;
+        } else if (event instanceof CustomerEmailAddressChanged) {
+            CustomerEmailAddressChanged emailAddressChanged = (CustomerEmailAddressChanged) event;
+            this.emailAddress = emailAddressChanged.emailAddress;
+            this.confirmationHash = emailAddressChanged.confirmationHash;
+            this.isEmailAddressConfirmed = false;
         }
     }
 }
